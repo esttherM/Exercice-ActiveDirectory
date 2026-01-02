@@ -1,0 +1,61 @@
+# 1. Définition du chemin du fichier CSV (relatif au dossier du script)
+$csvPath = "$PSScriptRoot\..\data\users.csv"
+
+# 2. Configuration du mot de passe sécurisé "Azerty_2025!"
+$passwordString = "Azerty_2025!"
+$securePassword = ConvertTo-SecureString $passwordString -AsPlainText -Force
+
+# 3. Importation des données du fichier CSV
+if (Test-Path $csvPath) {
+    $users = Import-Csv -Path $csvPath -Delimiter ","
+    Write-Host "Début de l'importation des utilisateurs..." -ForegroundColor Cyan
+} else {
+    Write-Error "Fichier CSV introuvable à l'emplacement : $csvPath"
+    return
+}
+
+# 4. Boucle pour chaque utilisateur du CSV
+foreach ($user in $users) {
+    # Création du SamAccountName (ex: MARCELLINE.ALEXANDRE)
+    $samName = "$($user.prénom).$($user.nom)".ToLower()
+    $displayName = "$($user.prénom) $($user.nom)"
+    
+    # Vérifier si l'utilisateur existe déjà
+    if (-not (Get-ADUser -Filter "SamAccountName -eq '$samName'")) {
+        
+        # Création de l'utilisateur avec mot de passe et force le changement au login
+        New-ADUser -Name $displayName `
+                   -SamAccountName $samName `
+                   -GivenName $user.prénom `
+                   -Surname $user.nom `
+                   -AccountPassword $securePassword `
+                   -Enabled $true `
+                   -ChangePasswordAtLogon $true `
+                   -Path "CN=Users,DC=laplateforme,DC=io"
+        
+        Write-Host "Utilisateur créé : $displayName" -ForegroundColor Green
+    }
+
+    # 5. Gestion des groupes (Boucle sur les colonnes groupe1 à groupe6)
+    $groupesColonnes = @($user.groupe1, $user.groupe2, $user.groupe3, $user.groupe4, $user.groupe5, $user.groupe6)
+
+    foreach ($nomGroupe in $groupesColonnes) {
+        # On vérifie si la colonne n'est pas vide
+        if (-not [string]::IsNullOrWhiteSpace($nomGroupe)) {
+            
+            # Si le groupe n'existe pas, on le crée automatiquement
+            if (-not (Get-ADGroup -Filter "Name -eq '$nomGroupe'")) {
+                New-ADGroup -Name $nomGroupe `
+                            -GroupCategory Security `
+                            -GroupScope Global `
+                            -Path "CN=Users,DC=laplateforme,DC=io"
+                Write-Host "Groupe créé : $nomGroupe" -ForegroundColor Yellow
+            }
+            
+            # Ajout de l'utilisateur au groupe
+            Add-ADGroupMember -Identity $nomGroupe -Members $samName
+        }
+    }
+}
+
+Write-Host "Importation terminée avec succès !" -ForegroundColor White -BackgroundColor Green

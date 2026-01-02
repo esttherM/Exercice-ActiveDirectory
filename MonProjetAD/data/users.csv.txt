@@ -1,0 +1,5 @@
+nom,prénom,groupe1,groupe2,groupe3,groupe4,groupe5,groupe6
+ALEXANDRE,MARCELLINE,Animation,,,,,
+ARAGON,ISABELLE,Animation,,,,,
+AVARO,MARINA,As,Médical,,,,
+THILLOT,MARC,Directeur,Cadres,Hébergement,Technique,Administratif,Animation

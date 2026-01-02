@@ -1,0 +1,16 @@
+# 1. Installation du rôle Active Directory Domain Services
+Install-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools
+
+# 2. Configuration de la forêt laplateforme.io
+# Le SafeModeAdministratorPassword est le mot de passe de secours de l'AD
+$password = ConvertTo-SecureString "Azerty_2025!" -AsPlainText -Force
+
+Install-ADDSForest `
+    -DomainName "laplateforme.io" `
+    -SafeModeAdministratorPassword $password `
+    -InstallDns $true `
+    -CreateDnsDelegation $false `
+    -NoRebootOnCompletion $false `
+    -Force $true
+
+# Note : Le serveur redémarrera automatiquement à la fin de l'installation.
